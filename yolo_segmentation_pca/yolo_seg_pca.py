@@ -54,13 +54,14 @@ def getOrientation(pts, img):
  
   angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
   ## [visualization]
+  angle_deg = -(int(np.rad2deg(angle))-180) % 180
  
   # Label with the rotation angle
-  label = "  Rotation Angle: " + str(-int(np.rad2deg(angle)) - 90) + " degrees"
-  textbox = cv2.rectangle(img, (cntr[0], cntr[1]-25), (cntr[0] + 250, cntr[1] + 10), (255,255,255), -1)
-  cv2.putText(img, label, (cntr[0], cntr[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+  # label = "  Rotation Angle: " + str(-int(np.rad2deg(angle)) - 90) + " degrees"
+  # textbox = cv2.rectangle(img, (cntr[0], cntr[1]-25), (cntr[0] + 250, cntr[1] + 10), (255,255,255), -1)
+  # cv2.putText(img, label, (cntr[0], cntr[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
  
-  return angle
+  return angle_deg
 
 model=YOLO("yolov8m-seg.pt")
 
