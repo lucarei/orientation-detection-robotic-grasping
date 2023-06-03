@@ -63,36 +63,38 @@ def getOrientation(pts, img):
  
   return angle_deg
 
+#get network
 model=YOLO("yolov8m-seg.pt")
 
-img = cv2.imread("/home/lrros2/Desktop/bottle4.jpg")
+#read image
+img = cv2.imread("/home/lrros2/Desktop/bottle3.jpg")
+
+#resize image (optional)
 img_res_toshow = cv2.resize(img, None, fx= 0.5, fy= 0.5, interpolation= cv2.INTER_LINEAR)
 cv2.imshow("Input",img_res_toshow)
-prediction=model.predict(img,save=True, save_txt=True)
+#print("shape immagine",str(img_res_toshow.shape))
+height=img_res_toshow.shape[0]
+width=img_res_toshow.shape[1]
+dim=(width,height)
+#print(dim)
+
+#make prediction
+prediction=model.predict(img,save=False, save_txt=False)
      
+#obtain BW image
 bw=(prediction[0].masks.masks[0].cpu().numpy() * 255).astype("uint8")
+#BW image with same dimention of initial image
+bw=cv2.resize(bw, dim, interpolation = cv2.INTER_AREA)
 cv2.imshow("Input image BN",bw)
+print("shape immagine bn",str(bw.shape))
 
-height_bw=bw.shape[0]
-width_bw=bw.shape[1]
-height_img=img.shape[0]
-width_img=img.shape[1]
-print(height_img)
-print(height_bw)
-
-scale_factor=height_bw/height_img
-img = cv2.resize(img, None, fx= scale_factor, fy= scale_factor, interpolation= cv2.INTER_LINEAR)
-
-
+img=img_res_toshow
 cv2.waitKey(0)
 
 
 contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 print(contours)
 for i, c in enumerate(contours):
-  #print(c)
-  #print(i)
- 
   # Calculate the area of each contour
   area = cv2.contourArea(c)
  
@@ -108,4 +110,4 @@ for i, c in enumerate(contours):
  
 cv2.imshow('Output Image', img)
 cv2.waitKey(0)
-cv.destroyAllWindows()
+cv2.destroyAllWindows()
