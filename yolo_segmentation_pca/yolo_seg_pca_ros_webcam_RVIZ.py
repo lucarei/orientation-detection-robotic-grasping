@@ -84,7 +84,7 @@ def getOrientation(pts, img):
   textbox = cv2.rectangle(img, (cntr[0], cntr[1]-25), (cntr[0] + 250, cntr[1] + 10), (255,255,255), -1)
   cv2.putText(img, label, (cntr[0], cntr[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
  
-  return angle
+  return angle_deg
 
 
 class image_receiver(object):
@@ -104,32 +104,35 @@ class image_receiver(object):
         
         #img_res_toshow = cv2.resize(img, None, fx= 0.5, fy= 0.5, interpolation= cv2.INTER_LINEAR)
         #cv2.imshow("Input",img_res_toshow)
-        prediction=self.model.predict(img,save=False, save_txt=False)
-                
-        bw=(prediction[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
-        #cv2.imshow("Input image BN",bw)
-
-        contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        #print(contours)
-        for i, c in enumerate(contours):
-
-            # Calculate the area of each contour
-            area = cv2.contourArea(c)
-                
-            # Ignore contours that are too small or too large
-            if area < 3700 or 100000 < area:
-                    continue
-                
-            # Draw each contour only for visualisation purposes
-            cv2.drawContours(img, contours, i, (0, 0, 255), 2)
-                
-            # Find the orientation of each shape
-            print(getOrientation(c, img))
+        try:
+            prediction=self.model.predict(img,save=False, save_txt=False)
+        except AttributeError:
+            print("Prediction Error YOLO")
         
-        #publish result after conversion
-        self.pub.publish(self.br.cv2_to_imgmsg(img))
-                        
+        try:
+            bw=(prediction[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
+            #cv2.imshow("Input image BN",bw)
+            contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+            #print(contours)
+            for i, c in enumerate(contours):
 
+                # Calculate the area of each contour
+                area = cv2.contourArea(c)
+                
+                # Ignore contours that are too small or too large
+                if area < 3700 or 100000 < area:
+                        continue
+                
+                # Draw each contour only for visualisation purposes
+                cv2.drawContours(img, contours, i, (0, 0, 255), 2)
+                
+                # Find the orientation of each shape
+                print(getOrientation(c, img))
+        
+            #publish result after conversion
+            self.pub.publish(self.br.cv2_to_imgmsg(img))
+        except AttributeError:
+            print("Prediction Error YOLO")
 
 
 
