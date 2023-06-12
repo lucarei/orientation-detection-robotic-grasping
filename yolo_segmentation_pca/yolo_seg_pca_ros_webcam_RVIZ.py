@@ -5,7 +5,7 @@ IMPORTANT
 - code used just to test YOLO segmentation in ROS
 - activate webcam with --> roslaunch usb_cam usb_cam-test.launch
 - change source in launch file (search it using rospy)
-- publish a message to require segmentation --> rostopic pub /activate std_msgs/Int32 "data: 1" 
+- segmentation and axis are always published in a topic (use RVIZ)
 """
 
 import rospy
@@ -75,7 +75,8 @@ def getOrientation(pts, img):
   drawAxis(img, cntr, p2, (0, 0, 255), 5)
  
   angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
-  ## [visualization]
+  
+  #optimized angles for grasp application
   angle_deg = -(int(np.rad2deg(angle))-180) % 180
  
   # Label with the rotation angle
@@ -98,7 +99,7 @@ class image_receiver(object):
         rospy.loginfo('Image received...')
         self.image = self.br.imgmsg_to_cv2(msg)
         img=self.image
-        print(img.shape)
+        #print(img.shape)
         #cv2.imshow("hello",im)
         
         #img_res_toshow = cv2.resize(img, None, fx= 0.5, fy= 0.5, interpolation= cv2.INTER_LINEAR)
@@ -108,13 +109,10 @@ class image_receiver(object):
         bw=(prediction[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
         #cv2.imshow("Input image BN",bw)
 
-
         contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-        print(contours)
+        #print(contours)
         for i, c in enumerate(contours):
-            #print(c)
-            #print(i)
-                
+
             # Calculate the area of each contour
             area = cv2.contourArea(c)
                 
@@ -125,9 +123,10 @@ class image_receiver(object):
             # Draw each contour only for visualisation purposes
             cv2.drawContours(img, contours, i, (0, 0, 255), 2)
                 
-                # Find the orientation of each shape
+            # Find the orientation of each shape
             print(getOrientation(c, img))
         
+        #publish result after conversion
         self.pub.publish(self.br.cv2_to_imgmsg(img))
                         
 
@@ -137,10 +136,8 @@ class image_receiver(object):
 def main():
     # create a subscriber instance
     sub = image_receiver()
-      
     # follow it up with a no-brainer sequence check
     print('Currently in the main function...')
-      
     # initializing the subscriber node
     rospy.init_node('listener', anonymous=True)
     rospy.spin()
