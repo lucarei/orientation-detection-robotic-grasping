@@ -125,11 +125,6 @@ class image_receiver(object):
             #BW image with same dimention of initial image
             bw=cv2.resize(bw, dim, interpolation = cv2.INTER_AREA)
             cv2.imshow("bn",bw)
-
-  
-
-
-
             cv2.waitKey(0)
 
 
@@ -157,9 +152,6 @@ class image_receiver(object):
             cv2.waitKey(0)
             cv2.destroyAllWindows()
                         
-
-
-
 
 def main():
     # create a subscriber instance
