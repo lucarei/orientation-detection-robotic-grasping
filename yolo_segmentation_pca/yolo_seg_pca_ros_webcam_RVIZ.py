@@ -64,6 +64,7 @@ def getOrientation(pts, img):
  
   # Store the center of the object
   cntr = (int(mean[0,0]), int(mean[0,1]))
+  #print(cntr)
   ## [pca]
  
   ## [visualization]
@@ -84,7 +85,7 @@ def getOrientation(pts, img):
   textbox = cv2.rectangle(img, (cntr[0], cntr[1]-25), (cntr[0] + 250, cntr[1] + 10), (255,255,255), -1)
   cv2.putText(img, label, (cntr[0], cntr[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
  
-  return angle_deg
+  return angle_deg, cntr
 
 
 class image_receiver(object):
@@ -101,34 +102,44 @@ class image_receiver(object):
         img=self.image
 
         prediction=self.model.predict(img,save=False, save_txt=False)
-        
+
         try:
-            #take just the first prediction
+            #take class id
+            class_id=prediction[0].boxes[0].cls[0].item()
+            #take string from list of objects through class id
+            print("predicted object: ",prediction[0].names[class_id])
+
+            #bw image
             bw=(prediction[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
             #cv2.imshow("Input image BN",bw)
+
+            #contours from bw images
             contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
             #print(contours)
             for i, c in enumerate(contours):
 
                 # Calculate the area of each contour
                 area = cv2.contourArea(c)
-                
+                    
                 # Ignore contours that are too small or too large
                 if area < 3700 or 100000 < area:
                         continue
-                
+                    
                 # Draw each contour only for visualisation purposes
                 cv2.drawContours(img, contours, i, (0, 0, 255), 2)
-                
+                    
                 # Find the orientation of each shape
-                print(getOrientation(c, img))
-        
-            #publish result after conversion
+                angle_deg, cntr=getOrientation(c, img)
+                print(cntr)
+                print(angle_deg)
+                    #print(getOrientation(c, img))
+            
+                #publish result after conversion
             self.pub.publish(self.br.cv2_to_imgmsg(img))
-        except AttributeError:
+
+        except (AttributeError, IndexError):
             print("Prediction Error YOLO")
-
-
+        
 
 def main():
     # create a subscriber instance
