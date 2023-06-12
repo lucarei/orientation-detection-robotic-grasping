@@ -92,8 +92,11 @@ class image_receiver(object):
     def __init__(self):
         self.br = CvBridge()
         self.sub=rospy.Subscriber("/usb_cam/image_raw",Image,self.callback)
-        self.pub=rospy.Publisher("/yolo/segmented/axis", Image, queue_size=1)
-        self.model=YOLO("yolov8m-seg.pt")
+        self.pub=rospy.Publisher("/yolo/segmented/oriented", Image, queue_size=1)
+        self.pubx=rospy.Publisher("cx", Int32, queue_size=1)
+        self.puby=rospy.Publisher("cy", Int32, queue_size=1)
+        self.pubo=rospy.Publisher("orientation", Int32, queue_size=1)
+        self.model=YOLO("best_taco_yolo8_segmentation.pt")
 
 
     def callback(self, msg):
@@ -132,7 +135,10 @@ class image_receiver(object):
                 angle_deg, cntr=getOrientation(c, img)
                 print(cntr)
                 print(angle_deg)
-                    #print(getOrientation(c, img))
+                #print(getOrientation(c, img))
+                self.pubx.publish(cntr[0])
+                self.puby.publish(cntr[1])
+                self.pubo.publish(angle_deg)
             
                 #publish result after conversion
             self.pub.publish(self.br.cv2_to_imgmsg(img))
