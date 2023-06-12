@@ -76,9 +76,10 @@ def getOrientation(pts, img):
  
   angle = atan2(eigenvectors[0,1], eigenvectors[0,0]) # orientation in radians
   ## [visualization]
+  angle_deg = -(int(np.rad2deg(angle))-180) % 180
  
   # Label with the rotation angle
-  label = "  Rotation Angle: " + str(-int(np.rad2deg(angle)) - 90) + " degrees"
+  label = "  Rotation Angle: " + str(angle_deg) + " degrees"
   textbox = cv2.rectangle(img, (cntr[0], cntr[1]-25), (cntr[0] + 250, cntr[1] + 10), (255,255,255), -1)
   cv2.putText(img, label, (cntr[0], cntr[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
  
@@ -88,74 +89,46 @@ def getOrientation(pts, img):
 class image_receiver(object):
     def __init__(self):
         self.br = CvBridge()
-        self.flag=0
         self.sub=rospy.Subscriber("/usb_cam/image_raw",Image,self.callback)
-        rospy.Subscriber("/activate",Int32,self.callback_activate)
+        self.pub=rospy.Publisher("/yolo/segmented/axis", Image, queue_size=1)
+        self.model=YOLO("yolov8m-seg.pt")
 
-    def callback_activate(self,data):
-        self.flag=1
-        print("hello")
 
     def callback(self, msg):
         rospy.loginfo('Image received...')
         self.image = self.br.imgmsg_to_cv2(msg)
-        im=self.image
-        print(im.shape)
+        img=self.image
+        print(img.shape)
         #cv2.imshow("hello",im)
-
-        print(self.flag)
-        if self.flag==1:
-            print("ARRIVED")
-            self.sub.unregister()
-            
-            model=YOLO("yolov8m-seg.pt")
-
-            img = im
-            cv2.imshow("Input",img)
-            #img_res_toshow = cv2.resize(img, None, fx= 0.5, fy= 0.5, interpolation= cv2.INTER_LINEAR)
-            #cv2.imshow("Input",img_res_toshow)
-            prediction=model.predict(img,save=False, save_txt=False)
+        
+        #img_res_toshow = cv2.resize(img, None, fx= 0.5, fy= 0.5, interpolation= cv2.INTER_LINEAR)
+        #cv2.imshow("Input",img_res_toshow)
+        prediction=self.model.predict(img,save=False, save_txt=False)
                 
-            bw=(prediction[0].masks.masks[0].cpu().numpy() * 255).astype("uint8")
-            print(bw.shape)
-
-            height=img.shape[0]
-            width=img.shape[1]
-            dim=(width,height)
-            #BW image with same dimention of initial image
-            bw=cv2.resize(bw, dim, interpolation = cv2.INTER_AREA)
-            cv2.imshow("bn",bw)
-
-  
+        bw=(prediction[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
+        #cv2.imshow("Input image BN",bw)
 
 
-
-            cv2.waitKey(0)
-
-
-            contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
-            #print(contours)
-            for i, c in enumerate(contours):
-                #print(c)
-                #print(i)
+        contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        print(contours)
+        for i, c in enumerate(contours):
+            #print(c)
+            #print(i)
                 
-                # Calculate the area of each contour
-                area = cv2.contourArea(c)
+            # Calculate the area of each contour
+            area = cv2.contourArea(c)
                 
-                # Ignore contours that are too small or too large
-                if area < 3700 or 100000 < area:
+            # Ignore contours that are too small or too large
+            if area < 3700 or 100000 < area:
                     continue
                 
-                # Draw each contour only for visualisation purposes
-                cv2.drawContours(img, contours, i, (0, 0, 255), 2)
+            # Draw each contour only for visualisation purposes
+            cv2.drawContours(img, contours, i, (0, 0, 255), 2)
                 
                 # Find the orientation of each shape
-                print(getOrientation(c, img))
-            
-            cv2.imshow('Output Image', img)
-            print(img.shape)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            print(getOrientation(c, img))
+        
+        self.pub.publish(self.br.cv2_to_imgmsg(img))
                         
 
 
