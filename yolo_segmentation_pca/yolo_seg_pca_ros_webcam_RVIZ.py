@@ -99,17 +99,11 @@ class image_receiver(object):
         rospy.loginfo('Image received...')
         self.image = self.br.imgmsg_to_cv2(msg)
         img=self.image
-        #print(img.shape)
-        #cv2.imshow("hello",im)
-        
-        #img_res_toshow = cv2.resize(img, None, fx= 0.5, fy= 0.5, interpolation= cv2.INTER_LINEAR)
-        #cv2.imshow("Input",img_res_toshow)
-        try:
-            prediction=self.model.predict(img,save=False, save_txt=False)
-        except AttributeError:
-            print("Prediction Error YOLO")
+
+        prediction=self.model.predict(img,save=False, save_txt=False)
         
         try:
+            #take just the first prediction
             bw=(prediction[0].masks.data[0].cpu().numpy() * 255).astype("uint8")
             #cv2.imshow("Input image BN",bw)
             contours, _ = cv2.findContours(bw, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
